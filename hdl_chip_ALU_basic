@@ -1,0 +1,36 @@
+CHIP ALU {
+    IN  
+        x[16], y[16],  // 16-bit inputs        
+        zx, // zero the x input?
+        nx, // negate the x input?
+        zy, // zero the y input?
+        ny, // negate the y input?
+        f,  // compute (out = x + y) or (out = x & y)?
+        no; // negate the out output?
+    OUT 
+        out[16], // 16-bit output
+        zr,      // if (out == 0) equals 1, else 0
+        ng;      // if (out < 0)  equals 1, else 0
+
+    PARTS:
+    // zero out entire x / y register if zx or zy = true
+    Mux16(a=x, b=false, sel=zx, out=xMuxOut);
+    Mux16(a=y, b=false, sel=zy, out=yMuxOut);
+
+    // negate entire x / y register if nx or ny = true
+    Not16(in=xMuxOut, out=notX);
+    Mux16(a=xMuxOut, b=notX, sel=nx, out=xFinal);
+    Not16(in=yMuxOut, out=notY);
+    Mux16(a=yMuxOut, b=notY, sel=ny, out=yFinal);
+
+    // select either x+y or x&y depending on control bit f
+    And16(a=xFinal, b=yFinal, out=andResult);
+    Add16(a=xFinal, b=yFinal, out=addResult);
+    Mux16(a=andResult, b=addResult, sel=f, out=funcOut);
+
+    // Negate output if no = true
+    Not16(in=funcOut, out=notOut);
+    Mux16(a=funcOut, b=notOut, sel=no, out=out);
+
+    //doesn't send zr or ng flags! this is only a basic ALU
+}
